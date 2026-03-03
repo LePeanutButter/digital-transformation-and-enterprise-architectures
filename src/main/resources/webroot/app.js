@@ -39,27 +39,14 @@ document.body.appendChild(popup);
 const htmlContent = `
 <h3>Rutas que se pueden explorar</h3>
 <ol>
-  <li><a href="http://localhost:8080/App/hello?name=[Nombre]" target="_blank">/App/hello?name=[Nombre]</a>
+  <li><a href="http://localhost:8080/greetings?name=[Nombre]" target="_blank">/greetings?name=[Nombre]</a>
       : Devuelve <strong>"Hello [Nombre]"</strong> o <strong>"Hello World"</strong> si no se pasa parámetro
   </li>
-  <li><a href="http://localhost:8080/App/pi" target="_blank">/App/pi</a>
+  <li><a href="http://localhost:8080/math/constants/pi" target="_blank">/App/pi</a>
       : Devuelve <strong>PI: 3.141592653589793</strong>
   </li>
   <li><a href="http://localhost:8080/" target="_blank">/</a>
       : Devuelve <strong>index.html</strong>
-  </li>
-  <li><a href="http://localhost:8080/index.html" target="_blank">/index.html</a>
-      : Devuelve <strong>index.html</strong>
-  </li>
-  <li><a href="http://localhost:8080/styles.css" target="_blank">/styles.css</a>
-      : Devuelve CSS estático
-  </li>
-  <li><a href="http://localhost:8080/app.js" target="_blank">/app.js</a>
-      : Devuelve JS estático
-  </li>
-  <li><a href="http://localhost:8080/images/logo.svg" target="_blank">/images/logo.svg</a>
-      : Devuelve la imagen del logo
-  </li>
   <li>Cualquier ruta inexistente, por ejemplo <a href="http://localhost:8080/ruta/inexistente" target="_blank">/ruta/inexistente</a>
       : Devuelve <strong>404 Not Found</strong>
   </li>
