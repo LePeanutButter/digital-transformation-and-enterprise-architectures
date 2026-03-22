@@ -7,13 +7,13 @@ This project implements a secure web application following enterprise architectu
 
 ## Features
 
-- **TLS Encryption** — End-to-end encryption using Let's Encrypt certificates on both Apache and Spring Boot servers
-- **Asynchronous HTML+JavaScript Client** — Frontend using `fetch` and `async/await` for non-blocking API communication; no page reloads
-- **Secure Login & Registration** — BCrypt password hashing; credentials never stored in plain text; validation via Jakarta Bean Validation
-- **Stateless Token Authentication** — UUID-based bearer tokens with 8-hour TTL; tokens validated by `BearerTokenAuthFilter`
-- **AWS Deployment** — Two EC2 instances: one for Apache (web tier), one for Spring Boot (application tier)
-- **CORS Configuration** — Cross-origin resource sharing configured in Spring for frontend-backend separation
-- **In-Memory User Store** — `UserStore` with `ConcurrentHashMap` for demo purposes; easily replaceable with a database
+- **TLS Encryption** - End-to-end encryption using Let's Encrypt certificates on both Apache and Spring Boot servers
+- **Asynchronous HTML+JavaScript Client** - Frontend using `fetch` and `async/await` for non-blocking API communication; no page reloads
+- **Secure Login & Registration** - BCrypt password hashing; credentials never stored in plain text; validation via Jakarta Bean Validation
+- **Stateless Token Authentication** - UUID-based bearer tokens with 8-hour TTL; tokens validated by `BearerTokenAuthFilter`
+- **AWS Deployment** - Two EC2 instances: one for Apache (web tier), one for Spring Boot (application tier)
+- **CORS Configuration** - Cross-origin resource sharing configured in Spring for frontend-backend separation
+- **In-Memory User Store** - `UserStore` with `ConcurrentHashMap` for demo purposes; easily replaceable with a database
 
 ## Project Structure
 
@@ -87,14 +87,14 @@ graph TD
 
     subgraph WebTier["Web Tier - EC2 Instance 1"]
         D[Apache HTTP Server]
-        E[/var/www/html<br/>Static Files]
+        E["/var/www/html<br>Static Files"]
         F[TLS - Let's Encrypt]
     end
 
     subgraph AppTier["Application Tier - EC2 Instance 2"]
         G[Spring Boot :5000]
-        H[LoginController<br/>/auth/register, /auth/login]
-        I[MeController<br/>/api/me]
+        H["LoginController<br>/auth/register, /auth/login"]
+        I["MeController<br>/api/me"]
         J[AuthService + BCrypt]
         K[TokenService 8h TTL]
         L[UserStore in-memory]
@@ -133,7 +133,7 @@ sequenceDiagram
     S->>S: TokenService.issueToken()
     S->>U: 200 {token}
 
-    U->>S: GET /api/me Authorization: Bearer &lt;token&gt;
+    U->>S: "GET /api/me Authorization: Bearer <token>"
     S->>S: BearerTokenAuthFilter validates
     S->>U: 200 {username}
 ```
@@ -260,7 +260,7 @@ The token is stored in `localStorage` and sent as `Authorization: Bearer <token>
 
 The video should show: (1) the application running, (2) login and registration flow, (3) HTTPS active (padlock in browser).
 
-**Video link**: [Your video URL]
+**Video link**: https://drive.google.com/file/d/1Cxp1AW741T-uH2mZM_o6IsNgWL7mtCt6/view?usp=sharing
 
 ## Security Implementation
 
