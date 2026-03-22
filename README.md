@@ -35,11 +35,7 @@ secure-app-architecture-aws/
 │   ├── styles.css             # Styling
 │   ├── config.js              # API_BASE_URL configuration
 │   ├── api.js                 # Async API client (fetch)
-│   ├── app.js                 # UI logic and event handlers
-│   ├── httpd.conf.example     # Apache configuration template
-│   └── deploy/
-│       ├── install-apache.sh  # Installs httpd on Amazon Linux
-│       └── deploy-to-apache.sh# Copies files to /var/www/html
+│   └── app.js                 # UI logic and event handlers
 ├── img/                       # Screenshots for documentation
 └── README.md
 ```
