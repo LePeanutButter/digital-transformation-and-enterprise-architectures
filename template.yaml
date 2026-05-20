@@ -1,0 +1,231 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: 'TDSE Microservices - Serverless Architecture'
+
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 512
+    Runtime: java17
+    Environment:
+      Variables:
+        AUTH0_ISSUER: !Ref Auth0Issuer
+        AUTH0_AUDIENCE: !Ref Auth0Audience
+        SPRING_PROFILES_ACTIVE: learnerlab
+
+Parameters:
+  Auth0Issuer:
+    Type: String
+    Description: 'Auth0 Issuer URL'
+    Default: 'https://dev-2ewcpm72kdub4wzu.auth0.com/'
+  Auth0Audience:
+    Type: String
+    Description: 'Auth0 Audience'
+    Default: 'https://api.twitter.com'
+
+Resources:
+  UserLambdaFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      SkipBuild: true
+    Properties:
+      FunctionName: !Sub '${AWS::StackName}-user-service'
+      Handler: 'com.tdse.user.LambdaHandler::handleRequest'
+      CodeUri: user-service/target/user-service-1.0.0.jar
+      Description: 'User Service Lambda Function'
+      Role: !Sub "arn:aws:iam::${AWS::AccountId}:role/LabRole"
+      Environment:
+        Variables:
+          USERS_TABLE: !Ref UsersTable
+      Tracing: Active
+
+  PostLambdaFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      SkipBuild: true
+    Properties:
+      FunctionName: !Sub '${AWS::StackName}-post-service'
+      Handler: 'com.tdse.post.LambdaHandler::handleRequest'
+      CodeUri: post-service/target/post-service-1.0.0.jar
+      Description: 'Post Service Lambda Function'
+      Role: !Sub "arn:aws:iam::${AWS::AccountId}:role/LabRole"
+      Environment:
+        Variables:
+          POSTS_TABLE: !Ref PostsTable
+      Tracing: Active
+
+  StreamLambdaFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      SkipBuild: true
+    Properties:
+      FunctionName: !Sub '${AWS::StackName}-stream-service'
+      Handler: 'com.tdse.stream.LambdaHandler::handleRequest'
+      CodeUri: stream-service/target/stream-service-1.0.0.jar
+      Description: 'Stream Service Lambda Function'
+      Role: !Sub "arn:aws:iam::${AWS::AccountId}:role/LabRole"
+      Environment:
+        Variables:
+          STREAMS_TABLE: !Ref StreamsTable
+      Tracing: Active
+
+  ApiGatewayApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      StageName: prod
+      Auth:
+        DefaultAuthorizer: JwtAuthorizer
+        Authorizers:
+          JwtAuthorizer:
+            IdentitySource: "$request.header.Authorization"
+            JwtConfiguration:
+              issuer: !Ref Auth0Issuer
+              audience:
+                - !Ref Auth0Audience
+      CorsConfiguration:
+        AllowMethods:
+          - GET
+          - POST
+          - PUT
+          - DELETE
+          - OPTIONS
+        AllowHeaders:
+          - Content-Type
+          - X-Amz-Date
+          - Authorization
+          - X-Api-Key
+          - X-Amz-Security-Token
+        AllowOrigins:
+          - "*"
+        MaxAge: 300
+      DefaultRouteSettings:
+        ThrottlingBurstLimit: 100
+        ThrottlingRateLimit: 50
+
+  UserApiRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref ApiGatewayApi
+      RouteKey: 'ANY /api/users/{proxy+}'
+      Target: !Sub 'integrations/${UserApiIntegration}'
+      AuthorizationType: JWT
+      AuthorizerId: !GetAtt ApiGatewayApi.DefaultAuthorizer
+
+  UserApiIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref ApiGatewayApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !Sub 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${UserLambdaFunction}'
+      PayloadFormatVersion: '2.0'
+
+  PostApiRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref ApiGatewayApi
+      RouteKey: 'ANY /api/posts/{proxy+}'
+      Target: !Sub 'integrations/${PostApiIntegration}'
+      AuthorizationType: JWT
+      AuthorizerId: !GetAtt ApiGatewayApi.DefaultAuthorizer
+
+  PostApiIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref ApiGatewayApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !Sub 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${PostLambdaFunction}'
+      PayloadFormatVersion: '2.0'
+
+  StreamApiRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref ApiGatewayApi
+      RouteKey: 'ANY /api/stream/{proxy+}'
+      Target: !Sub 'integrations/${StreamApiIntegration}'
+      AuthorizationType: JWT
+      AuthorizerId: !GetAtt ApiGatewayApi.DefaultAuthorizer
+
+  StreamApiIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref ApiGatewayApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !Sub 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${StreamLambdaFunction}'
+      PayloadFormatVersion: '2.0'
+
+  UserLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref UserLambdaFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGatewayApi}/*/*'
+
+  PostLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref PostLambdaFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGatewayApi}/*/*'
+
+  StreamLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref StreamLambdaFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGatewayApi}/*/*'
+
+  UsersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: tdse-users
+      AttributeDefinitions:
+        - AttributeName: userId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: userId
+          KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+
+  PostsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: tdse-posts
+      AttributeDefinitions:
+        - AttributeName: postId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: postId
+          KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+
+  StreamsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: tdse-streams
+      AttributeDefinitions:
+        - AttributeName: streamId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: streamId
+          KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+
+Outputs:
+  ApiEndpoint:
+    Description: 'HTTP API Gateway endpoint URL'
+    Value: !Sub 'https://${ApiGatewayApi}.execute-api.${AWS::Region}.amazonaws.com'
+  UserApiUrl:
+    Description: 'API Gateway endpoint URL for User Service'
+    Value: !Sub 'https://${ApiGatewayApi}.execute-api.${AWS::Region}.amazonaws.com/api/users'
+  PostApiUrl:
+    Description: 'API Gateway endpoint URL for Post Service'
+    Value: !Sub 'https://${ApiGatewayApi}.execute-api.${AWS::Region}.amazonaws.com/api/posts'
+  StreamApiUrl:
+    Description: 'API Gateway endpoint URL for Stream Service'
+    Value: !Sub 'https://${ApiGatewayApi}.execute-api.${AWS::Region}.amazonaws.com/api/stream'
+  ApiGatewayApi:
+    Description: 'HTTP API Gateway API ID'
+    Value: !Ref ApiGatewayApi

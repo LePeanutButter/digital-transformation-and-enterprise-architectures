@@ -1,0 +1,37 @@
+spring:
+  profiles:
+    active: learnerlab
+  cloud:
+    aws:
+      region:
+        static: us-east-1
+      credentials:
+        access-key: ${AWS_ACCESS_KEY:}
+        secret-key: ${AWS_SECRET_KEY:}
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${AUTH0_ISSUER}
+          audiences: ${AUTH0_AUDIENCE}
+
+# DynamoDB Configuration
+dynamodb:
+  endpoint: ${DYNAMODB_ENDPOINT:https://dynamodb.us-east-1.amazonaws.com}
+  region: ${AWS_REGION:us-east-1}
+
+# Feign Client Configuration for Lambda Environment
+feign:
+  client:
+    config:
+      default:
+        connectTimeout: 5000
+        readTimeout: 10000
+
+# Logging
+logging:
+  level:
+    com.tdse: INFO
+    org.springframework.security: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
